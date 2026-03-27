@@ -1,0 +1,61 @@
+<% if room.direct? %>
+  <div
+    class="call-bar__webrtc"
+    data-controller="webrtc-call"
+    data-webrtc-call-room-id-value="<%= room.id %>"
+    data-webrtc-call-ice-url-value="<%= room_webrtc_ice_path(room) %>"
+    data-webrtc-call-calling-text-value="<%= t("calls.calling") %>"
+    data-webrtc-call-incoming-text-value="<%= t("calls.incoming") %>"
+    data-webrtc-call-connected-text-value="<%= t("calls.connected") %>"
+    data-webrtc-call-declined-text-value="<%= t("calls.declined") %>"
+    data-webrtc-call-media-error-text-value="<%= t("calls.media_error") %>"
+    data-webrtc-call-lost-text-value="<%= t("calls.lost") %>"
+  >
+    <button type="button" class="btn btn--small" data-action="webrtc-call#startAudio" title="<%= t("calls.voice_title") %>">
+      <%= image_tag "mobile-phone.svg", size: 20, aria: { hidden: true } %>
+      <span class="for-screen-reader"><%= t("calls.voice") %></span>
+    </button>
+    <button type="button" class="btn btn--small" data-action="webrtc-call#startVideo" title="<%= t("calls.video_title") %>">
+      <%= image_tag "camera.svg", size: 20, aria: { hidden: true } %>
+      <span class="for-screen-reader"><%= t("calls.video") %></span>
+    </button>
+
+    <div class="call-webrtc-panel" data-webrtc-call-target="panel" hidden>
+      <p class="call-webrtc-panel__status" data-webrtc-call-target="status"></p>
+
+      <div class="call-webrtc-panel__incoming" data-webrtc-call-target="incomingRow" hidden>
+        <button type="button" class="btn" data-action="webrtc-call#accept"><%= t("calls.accept") %></button>
+        <button type="button" class="btn btn--negative" data-action="webrtc-call#decline"><%= t("calls.decline") %></button>
+      </div>
+
+      <div data-webrtc-call-target="activeRow" hidden>
+        <div class="call-webrtc-panel__videos">
+          <video data-webrtc-call-target="localVideo" playsinline muted hidden></video>
+          <video data-webrtc-call-target="remoteVideo" playsinline></video>
+        </div>
+        <div class="call-webrtc-panel__toolbar">
+          <button type="button" class="btn" data-action="webrtc-call#toggleMute" data-webrtc-call-target="muteButton" aria-pressed="false"><%= t("calls.mute") %></button>
+          <button type="button" class="btn btn--negative" data-action="webrtc-call#hangup"><%= t("calls.hang_up") %></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<% elsif Campfire::Rtc.jitsi_base_url.present? %>
+  <div
+    data-controller="jitsi-call"
+    data-jitsi-call-url-value="<%= room_jitsi_call_path(room) %>"
+  >
+    <button type="button" class="btn btn--small" data-action="jitsi-call#open" title="<%= t("calls.group_call_title") %>">
+      <%= image_tag "web.svg", size: 20, aria: { hidden: true } %>
+      <span><%= t("calls.group_call") %></span>
+    </button>
+
+    <dialog class="call-jitsi-dialog" data-jitsi-call-target="dialog">
+      <div class="call-jitsi-dialog__header">
+        <button type="button" class="btn btn--small" data-action="jitsi-call#close"><%= t("calls.close") %></button>
+      </div>
+      <iframe class="call-jitsi-dialog__frame" data-jitsi-call-target="frame" allow="camera; microphone; fullscreen; display-capture; autoplay"></iframe>
+    </dialog>
+  </div>
+<% end %>

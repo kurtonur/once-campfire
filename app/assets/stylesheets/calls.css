@@ -1,0 +1,101 @@
+.btn--small {
+  --btn-padding: 0.35em 0.75em;
+  font-size: 0.9rem;
+}
+
+.call-bar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--inline-space-half);
+  pointer-events: auto;
+}
+
+.call-bar__webrtc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: inherit;
+}
+
+.call-webrtc-panel {
+  background: oklch(var(--lch-white) / 0.95);
+  border: 1px solid var(--color-border-darker);
+  border-radius: 0.75rem;
+  bottom: calc(var(--block-space) + env(safe-area-inset-bottom, 0));
+  box-shadow: 0 4px 20px oklch(0% 0 0 / 0.15);
+  display: grid;
+  gap: var(--inline-space-half);
+  inset-inline-end: var(--inline-space);
+  max-inline-size: min(28rem, 94vw);
+  padding: var(--inline-space);
+  pointer-events: auto;
+  position: fixed;
+  z-index: 20;
+}
+
+@media (prefers-color-scheme: dark) {
+  .call-webrtc-panel {
+    background: oklch(var(--lch-black) / 0.92);
+  }
+}
+
+.call-webrtc-panel__videos {
+  display: grid;
+  gap: var(--inline-space-half);
+  grid-template-columns: 1fr 1fr;
+}
+
+.call-webrtc-panel video {
+  aspect-ratio: 4 / 3;
+  background: oklch(0% 0 0 / 0.85);
+  border-radius: 0.5rem;
+  inline-size: 100%;
+  object-fit: cover;
+}
+
+.call-webrtc-panel__incoming {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--inline-space-half);
+}
+
+.call-webrtc-panel__toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--inline-space-half);
+}
+
+.call-webrtc-panel__status {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.call-jitsi-dialog {
+  border: none;
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 40px oklch(0% 0 0 / 0.25);
+  inline-size: min(96vw, 78rem);
+  max-block-size: 90vh;
+  padding: 0;
+}
+
+.call-jitsi-dialog::backdrop {
+  background: oklch(0% 0 0 / 0.45);
+}
+
+.call-jitsi-dialog__header {
+  align-items: center;
+  display: flex;
+  gap: var(--inline-space);
+  justify-content: flex-end;
+  padding: var(--inline-space-half) var(--inline-space);
+}
+
+.call-jitsi-dialog__frame {
+  block-size: min(80vh, 52rem);
+  border: none;
+  display: block;
+  inline-size: 100%;
+}

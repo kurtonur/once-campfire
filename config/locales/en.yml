@@ -30,3 +30,21 @@
 # available at https://guides.rubyonrails.org/i18n.html.
 
 en:
+  calls:
+    voice: "Voice call"
+    voice_title: "Start a direct voice call"
+    video: "Video call"
+    video_title: "Start a direct video call"
+    group_call: "Group call"
+    group_call_title: "Open group video call (Jitsi)"
+    accept: "Accept"
+    decline: "Decline"
+    hang_up: "Hang up"
+    mute: "Mute"
+    close: "Close"
+    calling: "Calling…"
+    incoming: "Incoming call…"
+    connected: "Connected"
+    declined: "Call declined."
+    media_error: "Could not access microphone or camera."
+    lost: "Connection lost."

@@ -68,6 +68,8 @@ Rails.application.routes.draw do
       resource :refresh, only: :show
       resource :settings, only: :show
       resource :involvement, only: %i[ show update ]
+      get "webrtc/ice", to: "webrtc_ice#show", as: :webrtc_ice
+      get "calls/jitsi", to: "jitsi_calls#show", as: :jitsi_call
     end
 
     get "@:message_id", to: "rooms#show", as: :at_message

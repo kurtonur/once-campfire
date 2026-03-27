@@ -29,6 +29,22 @@ To configure additional features, you can set the following environment variable
 - `SENTRY_DSN` - to enable error reporting to sentry in production, supply your
   DSN here
 
+### Voice / video (self-hosted)
+
+Direct (1:1) calls use the browser WebRTC stack with **Action Cable** signaling.
+Configure STUN/TURN so peers can connect behind NAT:
+
+- `CAMPFIRE_ICE_SERVERS_JSON` – optional JSON array passed to `RTCPeerConnection`
+  (overrides everything below when set).
+- `CAMPFIRE_STUN_URL` – defaults to `stun:stun.l.google.com:19302` if unset.
+- `CAMPFIRE_TURN_URL`, `CAMPFIRE_TURN_USERNAME`, `CAMPFIRE_TURN_CREDENTIAL` –
+  optional; **[coturn](https://github.com/coturn/coturn)** on your own server is the usual choice for TURN.
+
+Group calls use an embedded **Jitsi Meet** room (you run Jitsi on your infrastructure):
+
+- `CAMPFIRE_JITSI_BASE_URL` – e.g. `https://meet.example.com` (no trailing path).
+  When unset, the “Group call” button is hidden.
+
 For example:
 
     docker build -t campfire .

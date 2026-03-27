@@ -13,9 +13,11 @@ export default class extends Controller {
     this.#teardown()
   }
 
-  async open() {
+  async open(event) {
     try {
-      const res = await fetch(this.urlValue, {
+      const media = event.params?.media || "video"
+      const url = this.#withMediaParam(this.urlValue, media)
+      const res = await fetch(url, {
         headers: { Accept: "application/json" },
         credentials: "same-origin"
       })
@@ -39,6 +41,17 @@ export default class extends Controller {
     }
     if (this.hasDialogTarget) {
       this.dialogTarget.close?.()
+    }
+  }
+
+  #withMediaParam(baseUrl, media) {
+    try {
+      const u = new URL(baseUrl, window.location.origin)
+      u.searchParams.set("media", media)
+      return u.pathname + u.search
+    } catch {
+      const sep = baseUrl.includes("?") ? "&" : "?"
+      return `${baseUrl}${sep}media=${encodeURIComponent(media)}`
     }
   }
 }

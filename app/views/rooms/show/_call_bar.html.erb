@@ -1,3 +1,4 @@
+<span class="call-bar">
 <% if room.direct? %>
   <div
     class="call-bar__webrtc"
@@ -43,12 +44,17 @@
 
 <% elsif Campfire::Rtc.jitsi_base_url.present? %>
   <div
+    class="call-bar__jitsi"
     data-controller="jitsi-call"
     data-jitsi-call-url-value="<%= room_jitsi_call_path(room) %>"
   >
-    <button type="button" class="btn btn--small" data-action="jitsi-call#open" title="<%= t("calls.group_call_title") %>">
-      <%= image_tag "web.svg", size: 20, aria: { hidden: true } %>
-      <span><%= t("calls.group_call") %></span>
+    <button type="button" class="btn btn--small" data-action="jitsi-call#open" data-jitsi-call-media-param="audio" title="<%= t("calls.voice_room_title") %>">
+      <%= image_tag "mobile-phone.svg", size: 20, aria: { hidden: true } %>
+      <span class="call-bar__label"><%= t("calls.voice_short") %></span>
+    </button>
+    <button type="button" class="btn btn--small" data-action="jitsi-call#open" data-jitsi-call-media-param="video" title="<%= t("calls.video_room_title") %>">
+      <%= image_tag "camera.svg", size: 20, aria: { hidden: true } %>
+      <span class="call-bar__label"><%= t("calls.video_short") %></span>
     </button>
 
     <dialog class="call-jitsi-dialog" data-jitsi-call-target="dialog">
@@ -58,4 +64,25 @@
       <iframe class="call-jitsi-dialog__frame" data-jitsi-call-target="frame" allow="camera; microphone; fullscreen; display-capture; autoplay"></iframe>
     </dialog>
   </div>
+
+<% else %>
+  <div class="call-bar__hint" data-controller="call-hint">
+    <button type="button" class="btn btn--small" data-action="call-hint#show" title="<%= t("calls.voice_title") %>">
+      <%= image_tag "mobile-phone.svg", size: 20, aria: { hidden: true } %>
+      <span class="call-bar__label"><%= t("calls.voice_short") %></span>
+    </button>
+    <button type="button" class="btn btn--small" data-action="call-hint#show" title="<%= t("calls.video_title") %>">
+      <%= image_tag "camera.svg", size: 20, aria: { hidden: true } %>
+      <span class="call-bar__label"><%= t("calls.video_short") %></span>
+    </button>
+
+    <dialog class="call-hint-dialog" data-call-hint-target="dialog">
+      <div class="call-hint-dialog__inner">
+        <h2 class="call-hint-dialog__title"><%= t("calls.ping_only_title") %></h2>
+        <p class="call-hint-dialog__body"><%= t("calls.ping_only_body") %></p>
+        <button type="button" class="btn" data-action="call-hint#close"><%= t("calls.got_it") %></button>
+      </div>
+    </dialog>
+  </div>
 <% end %>
+</span>

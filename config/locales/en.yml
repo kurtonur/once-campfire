@@ -50,3 +50,8 @@ en:
     declined: "Call declined."
     media_error: "Could not access microphone or camera."
     lost: "Connection lost."
+    voice_room_title: "Join this room's voice call (Jitsi)"
+    video_room_title: "Join this room's video call (Jitsi)"
+    ping_only_title: "Where calls work"
+    ping_only_body: "Browser voice and video use WebRTC in Ping (direct) chats. Open a Ping with someone from the sidebar — you’ll see the same Voice and Video buttons there. For group rooms, set CAMPFIRE_JITSI_BASE_URL to use Jitsi."
+    got_it: "OK"

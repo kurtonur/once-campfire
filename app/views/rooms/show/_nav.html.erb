@@ -11,9 +11,7 @@
     </h1>
   <% end %>
 
-  <span class="call-bar">
-    <%= render "rooms/show/call_bar", room: room %>
-  </span>
+  <%= render "rooms/show/call_bar", room: room %>
 
   <%= link_to_edit_room(room) do %>
     <%= image_tag "menu-dots-horizontal.svg", size: 20, aria: { hidden: "true" } %>

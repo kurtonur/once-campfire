@@ -3,12 +3,41 @@
   font-size: 0.9rem;
 }
 
+/* Keep call controls on-screen: room title must shrink in the flex row (#nav). */
+#nav .room--current {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+#nav .call-bar {
+  flex-shrink: 0;
+}
+
 .call-bar {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: var(--inline-space-half);
   pointer-events: auto;
+}
+
+.call-bar__label {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+@media (max-width: 45ch) {
+  .call-bar__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 }
 
 .call-bar__webrtc {

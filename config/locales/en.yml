@@ -32,8 +32,10 @@
 en:
   calls:
     voice: "Voice call"
+    voice_short: "Voice"
     voice_title: "Start a direct voice call"
     video: "Video call"
+    video_short: "Video"
     video_title: "Start a direct video call"
     group_call: "Group call"
     group_call_title: "Open group video call (Jitsi)"

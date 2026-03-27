@@ -13,11 +13,11 @@
   >
     <button type="button" class="btn btn--small" data-action="webrtc-call#startAudio" title="<%= t("calls.voice_title") %>">
       <%= image_tag "mobile-phone.svg", size: 20, aria: { hidden: true } %>
-      <span class="for-screen-reader"><%= t("calls.voice") %></span>
+      <span class="call-bar__label"><%= t("calls.voice_short") %></span>
     </button>
     <button type="button" class="btn btn--small" data-action="webrtc-call#startVideo" title="<%= t("calls.video_title") %>">
       <%= image_tag "camera.svg", size: 20, aria: { hidden: true } %>
-      <span class="for-screen-reader"><%= t("calls.video") %></span>
+      <span class="call-bar__label"><%= t("calls.video_short") %></span>
     </button>
 
     <div class="call-webrtc-panel" data-webrtc-call-target="panel" hidden>

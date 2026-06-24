@@ -30,6 +30,7 @@ export default class MessageFormatter {
   }
 
   formatBody(body) {
+    this.#formatStructuredText(body)
     this.#highlightCode(body)
   }
 
@@ -76,7 +77,101 @@ export default class MessageFormatter {
   }
 
   #highlightCodeBlock(block) {
-    if (this.#isPlainText(block)) window.hljs.highlightElement(block)
+    if (this.#isPlainText(block)) {
+      this.#formatCodeBlock(block)
+      window.hljs.highlightElement(block)
+    }
+  }
+
+  #formatStructuredText(body) {
+    if (!this.#hasOnlyPlainText(body)) return
+
+    const formatted = this.#formatStructuredValue(body.innerText)
+    if (!formatted) return
+
+    const container = document.createElement("div")
+    container.classList.add("trix-content")
+    const block = this.#structuredTextBlock(formatted)
+
+    container.append(block)
+    body.replaceChildren(container)
+  }
+
+  #formatCodeBlock(block) {
+    const formatted = this.#formatStructuredValue(block.textContent)
+    if (!formatted) return
+
+    block.textContent = formatted.text
+    this.#markStructuredTextBlock(block, formatted.language)
+  }
+
+  #formatStructuredValue(text) {
+    const trimmedText = text.trim()
+
+    if (trimmedText.length == 0) return
+
+    return this.#formatJson(trimmedText) || this.#formatXml(trimmedText)
+  }
+
+  #formatJson(text) {
+    if (!text.match(/^[\[{]/)) return
+
+    try {
+      return { language: "json", text: JSON.stringify(JSON.parse(text), null, 2) }
+    } catch {
+      return
+    }
+  }
+
+  #formatXml(text) {
+    if (!text.match(/^<[\s\S]+>$/)) return
+
+    const document = new DOMParser().parseFromString(text, "application/xml")
+    if (document.querySelector("parsererror")) return
+
+    const serializedXml = new XMLSerializer().serializeToString(document.documentElement)
+    return { language: "xml", text: this.#indentXml(serializedXml) }
+  }
+
+  #indentXml(xml) {
+    let indentation = 0
+
+    return xml
+      .replace(/(>)(<)(\/*)/g, "$1\n$2$3")
+      .split("\n")
+      .map(line => {
+        if (line.match(/^<\//)) indentation = Math.max(indentation - 1, 0)
+
+        const formattedLine = `${"  ".repeat(indentation)}${line}`
+
+        if (line.match(/^<[^!?/][^>]*[^/]>/) && !line.match(/^<[^>]+>[^<]*<\/[^>]+>$/)) {
+          indentation += 1
+        }
+
+        return formattedLine
+      })
+      .join("\n")
+  }
+
+  #structuredTextBlock(formatted) {
+    const block = document.createElement("pre")
+
+    block.textContent = formatted.text
+    this.#markStructuredTextBlock(block, formatted.language)
+
+    return block
+  }
+
+  #markStructuredTextBlock(block, language) {
+    block.classList.add("message__structured-text", `language-${language}`)
+    block.dataset.language = language
+  }
+
+  #hasOnlyPlainText(element) {
+    const textContainer = element.querySelector(".trix-content") || element
+    const hasRichElements = textContainer.querySelector("a, action-text-attachment, blockquote, code, figure, img, ol, pre, table, ul")
+
+    return hasRichElements == null && textContainer.innerText.trim().length > 0
   }
 
   #isPlainText(element) {

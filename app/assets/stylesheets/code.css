@@ -39,6 +39,39 @@
   background: var(--color-bg);
 }
 
+.message__structured-text {
+  border-color: var(--color-border-dark) !important;
+  box-shadow: inset 0 1px 0 oklch(100% 0 0 / 0.55);
+  line-height: 1.55;
+  max-inline-size: 100%;
+  overflow: auto;
+  padding-block-start: 2.6em !important;
+  position: relative;
+  white-space: pre !important;
+
+  @media (prefers-color-scheme: dark) {
+    box-shadow: inset 0 1px 0 oklch(100% 0 0 / 0.08);
+  }
+
+  &::before {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    color: var(--color-text);
+    content: attr(data-language);
+    font-family: var(--font-family);
+    font-size: 0.68rem;
+    font-weight: 700;
+    inset-block-start: 0.8rem;
+    inset-inline-start: 0.8rem;
+    letter-spacing: 0;
+    line-height: 1;
+    padding: 0.35em 0.55em;
+    position: absolute;
+    text-transform: uppercase;
+  }
+}
+
 .hljs-doctag,
 .hljs-keyword,
 .hljs-meta .hljs-keyword,

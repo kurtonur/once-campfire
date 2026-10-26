@@ -3,15 +3,19 @@ class WebPush::Pool
   attr_reader :delivery_pool, :invalidation_pool, :connection, :invalid_subscription_handler
 
   def initialize(invalid_subscription_handler:)
-    @delivery_pool = Concurrent::ThreadPoolExecutor.new(max_threads: 50, queue_size: 10000)
+    @delivery_pool = Concurrent::ThreadPoolExecutor.new(max_threads: 50, max_queue: 10000)
     @invalidation_pool = Concurrent::FixedThreadPool.new(1)
-    @connection = Net::HTTP::Persistent.new(name: "web_push", pool_size: 150)
+    @connection = WebPush::Connections.new
     @invalid_subscription_handler = invalid_subscription_handler
   end
 
   def queue(payload, subscriptions)
-    subscriptions.find_each do |subscription|
-      deliver_later(payload, subscription)
+    subscriptions.find_in_batches do |batch|
+      unread_counts = Membership.unread.where(user_id: batch.map(&:user_id)).group(:user_id).count
+
+      batch.each do |subscription|
+        deliver_later(payload, subscription, badge: unread_counts.fetch(subscription.user_id, 0))
+      end
     end
   end
 
@@ -22,9 +26,9 @@ class WebPush::Pool
   end
 
   private
-    def deliver_later(payload, subscription)
+    def deliver_later(payload, subscription, badge:)
       # Ensure any AR operations happen before we post to the thread pool
-      notification = subscription.notification(**payload)
+      notification = subscription.notification(**payload, badge: badge)
       subscription_id = subscription.id
 
       delivery_pool.post do

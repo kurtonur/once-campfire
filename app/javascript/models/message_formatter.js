@@ -77,10 +77,23 @@ export default class MessageFormatter {
   }
 
   #highlightCodeBlock(block) {
+    this.#normalizeLineBreaks(block)
+
     if (this.#isPlainText(block)) {
       this.#formatCodeBlock(block)
+
+      const language = block.dataset.language
+      if (language && window.hljs.getLanguage(language)) {
+        block.classList.add(`language-${language}`)
+      }
+
       window.hljs.highlightElement(block)
     }
+  }
+
+  // Lexxy breaks code block lines with <br>, Trix-era blocks used newlines
+  #normalizeLineBreaks(block) {
+    block.querySelectorAll("br").forEach(br => br.replaceWith("\n"))
   }
 
   #formatStructuredText(body) {
@@ -90,7 +103,7 @@ export default class MessageFormatter {
     if (!formatted) return
 
     const container = document.createElement("div")
-    container.classList.add("trix-content")
+    container.classList.add("lexxy-content")
     const block = this.#structuredTextBlock(formatted)
 
     container.append(block)
@@ -168,7 +181,7 @@ export default class MessageFormatter {
   }
 
   #hasOnlyPlainText(element) {
-    const textContainer = element.querySelector(".trix-content") || element
+    const textContainer = element.querySelector(".lexxy-content, .trix-content") || element
     const hasRichElements = textContainer.querySelector("a, action-text-attachment, blockquote, code, figure, img, ol, pre, table, ul")
 
     return hasRichElements == null && textContainer.innerText.trim().length > 0

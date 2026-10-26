@@ -1,6 +1,8 @@
 services:
   campfire:
-    image: "ghcr.io/basecamp/once-campfire:${TAG:-main}"
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: unless-stopped
     volumes:
       - "campfire-storage:/rails/storage"

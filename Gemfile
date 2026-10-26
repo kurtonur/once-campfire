@@ -12,7 +12,7 @@ gem "sqlite3"
 gem "redis", "~> 5.4"
 
 # Deployment
-gem "puma", "~> 6.6"
+gem "puma", "~> 8.0"
 
 # Jobs
 gem "resque", "~> 2.7.0"
@@ -25,6 +25,9 @@ gem "importmap-rails", github: "rails/importmap-rails"
 # Hotwire
 gem "turbo-rails", github: "hotwired/turbo-rails"
 gem "stimulus-rails"
+
+# Rich text
+gem "lexxy", "~> 0.9.24"
 
 # Media handling
 gem "image_processing", ">= 1.2"
@@ -40,7 +43,7 @@ gem "rqrcode"
 gem "rails_autolink"
 gem "geared_pagination"
 gem "jbuilder"
-gem "net-http-persistent"
+gem "surfguard", github: "basecamp/surfguard" # The SSRF address policy behind RestrictedHTTP
 gem "kredis"
 gem "platform_agent"
 gem "thruster"
@@ -48,6 +51,7 @@ gem "thruster"
 group :development, :test do
   gem "debug"
   gem "rubocop-rails-omakase", require: false
+  gem "bundler-audit", require: false
   gem "faker", require: false
   gem "brakeman", require: false
 end

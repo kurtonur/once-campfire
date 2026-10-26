@@ -1,5 +1,6 @@
 class Messages::BoostsController < ApplicationController
   before_action :set_message
+  before_action :set_boost, only: :destroy
 
   def index
   end
@@ -15,7 +16,6 @@ class Messages::BoostsController < ApplicationController
   end
 
   def destroy
-    @boost = Current.user.boosts.find(params[:id])
     @boost.destroy!
 
     broadcast_remove
@@ -26,13 +26,17 @@ class Messages::BoostsController < ApplicationController
       @message = Current.user.reachable_messages.find(params[:message_id])
     end
 
+    def set_boost
+      @boost = @message.boosts.find_by!(id: params[:id], booster: Current.user)
+    end
+
     def boost_params
       params.require(:boost).permit(:content)
     end
 
     def broadcast_create
       @boost.broadcast_append_to @boost.message.room, :messages,
-        target: "boosts_message_#{@boost.message.client_message_id}", partial: "messages/boosts/boost", attributes: { maintain_scroll: true }
+        target: helpers.dom_id(@boost.message, :boosts), partial: "messages/boosts/boost", attributes: { maintain_scroll: true }
     end
 
     def broadcast_remove

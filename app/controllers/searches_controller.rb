@@ -1,4 +1,5 @@
 class SearchesController < ApplicationController
+  around_action :cache_read_response, only: :index
   before_action :set_messages
 
   def index
@@ -20,7 +21,7 @@ class SearchesController < ApplicationController
   private
     def set_messages
       if query.present?
-        @messages = Current.user.reachable_messages.search(query).last(100)
+        @messages = Message.search_reachable(Current.user, query)
       else
         @messages = Message.none
       end

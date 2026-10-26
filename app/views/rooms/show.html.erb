@@ -14,10 +14,10 @@
 
   <%= messages_tag(@room) do %>
     <%= render "rooms/show/invitation", room: @room %>
-    <%= render partial: "messages/message", collection: @messages, cached: true %>
+    <%= render partial: "messages/message", collection: @messages, cached: ->(message) { message_fragment_cache_key(message) } %>
   <% end %>
 
-  <%= turbo_stream_from @room, :messages %>
+  <%= turbo_stream_from @room, :messages, channel: "RoomMessagesChannel" %>
   <%= button_to_jump_to_newest_message %>
 <% end %>
 

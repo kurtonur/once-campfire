@@ -1,4 +1,12 @@
 module MessagesHelper
+  # Rendered text is re-sanitized before linking. Rails' default safe list
+  # lacks the formatting the rich text editor produces
+  AUTO_LINK_ALLOWED_TAGS = Rails::HTML5::SafeListSanitizer.allowed_tags + ContentFilters::EDITOR_FORMATTING_TAGS
+  AUTO_LINK_ALLOWED_ATTRIBUTES = Rails::HTML5::SafeListSanitizer.allowed_attributes + ContentFilters::EDITOR_FORMATTING_ATTRIBUTES
+
+  # Text auto_link could turn into a link: a URL has a scheme or www., an email address an @
+  LINKABLE_TEXT = /:|@|www\./i
+
   def message_area_tag(room, &)
     tag.div id: "message-area", class: "message-area", contents: true, data: {
       controller: "messages presence drop-target",
@@ -31,6 +39,7 @@ module MessagesHelper
         controller: "reply",
         user_id: message.creator_id,
         message_id: message.id,
+        client_message_id: message.client_message_id,
         message_timestamp: message_timestamp_milliseconds,
         message_updated_at: message.updated_at.to_fs(:epoch),
         sort_value: message_timestamp_milliseconds,
@@ -57,7 +66,7 @@ module MessagesHelper
     when "sound"
       message_sound_presentation(message)
     else
-      auto_link h(ContentFilters::TextMessagePresentationFilters.apply(message.body.body)), html: { target: "_blank" }
+      text_message_presentation(message.body.body)
     end
   rescue Exception => e
     Sentry.capture_exception(e, extra: { message: message })
@@ -66,7 +75,65 @@ module MessagesHelper
     ""
   end
 
+  # These controls contain URLs and static markup, but no viewer or token state.
+  # Keep them across database commits; attachment controls still render afresh.
+  def cache_message_actions(message, &block)
+    return capture(&block) unless controller.perform_caching && !message.attachment?
+
+    key = fragment_name_with_digest([
+      "message-actions-v1", request.base_url, request.script_name, I18n.locale, message.id, message.room_id
+    ], nil)
+    FragmentCache.store.fetch(key) { capture(&block) }
+  end
+
+  def message_fragment_cache_key(message)
+    return message unless controller.perform_caching &&
+      %i[room creator rich_text_body boosts attachment_attachment].all? { |name| message.association(name).loaded? }
+
+    room = message.room
+    body = message.body.body
+    return message if room.direct? || message.attachment? || !body || body.to_html.include?("<action-text-attachment") ||
+      message.boosts.any? { |boost| !boost.association(:booster).loaded? }
+
+    # Collection caching preloads these rows before deriving keys. Read their
+    # actual content: foreign SQL writers need not touch Rails timestamps.
+    dependencies = [ message.attributes, room.attributes.slice("id", "type", "name"), message.creator.attributes,
+      body.to_html, message.boosts.sort_by(&:created_at).map { |boost| [ boost.attributes, boost.booster.attributes ] } ]
+    FragmentCache::ContentKey.new(Digest::SHA256.hexdigest(ActiveSupport::JSON.encode(dependencies)))
+  end
+
   private
+    def text_message_presentation(body)
+      render = -> { auto_link_text h(ContentFilters::TextMessagePresentationFilters.apply(body)) }
+
+      # Embedded attachments render database-backed metadata and signed URLs.
+      # Plain text HTML depends only on its content, even after a foreign edit.
+      html = body.to_html
+      if controller.perform_caching && !html.include?("<action-text-attachment") && html.bytesize <= ResponseCache::MAX_ENTRY_BYTES
+        FragmentCache.store.fetch([ "text-presentation-v2", I18n.locale, Digest::SHA256.hexdigest(html) ]) { render.call }
+      else
+        render.call
+      end
+    end
+
+    # auto_link finds URLs and email addresses with regular expressions, which
+    # can't tell an attribute value from text. Hand it one text node at a time,
+    # escaped as the serializer writes text, so a link can only land between tags.
+    def auto_link_text(html)
+      fragment = Nokogiri::HTML5.fragment(sanitize(html, tags: AUTO_LINK_ALLOWED_TAGS, attributes: AUTO_LINK_ALLOWED_ATTRIBUTES))
+
+      fragment.xpath(".//text()[not(ancestor::a)]").each do |node|
+        if node.text.match?(LINKABLE_TEXT)
+          text = node.to_html
+          linked = auto_link(text, html: { target: "_blank" })
+          node.replace Nokogiri::HTML5.fragment(linked) unless linked == text
+        end
+      end
+
+      # A <pre> starting with a newline needs an extra one written out to survive the next parse
+      fragment.to_html(preserve_newline: true).html_safe
+    end
+
     def messages_actions
       "turbo:before-stream-render@document->messages#beforeStreamRender keydown.up@document->messages#editMyLastMessage"
     end

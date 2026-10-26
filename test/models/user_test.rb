@@ -6,9 +6,29 @@ class UserTest < ActiveSupport::TestCase
     assert users(:david).valid?
   end
 
+  test "a password challenge is checked whenever the password would change" do
+    assert_not User.find(users(:david).id).update(password: "a new secret123456", password_challenge: "")
+    assert_not User.find(users(:david).id).update(password: "a new secret123456", password_challenge: "not my password")
+    assert User.find(users(:david).id).update(name: "Dave", password_challenge: "")
+    assert User.find(users(:david).id).update(password: "a new secret123456", password_challenge: "secret123456")
+    assert User.find(users(:david).id).update(password: "another secret123456")
+  end
+
   test "creating users grants membership to the open rooms" do
     assert_difference -> { Membership.count }, +Rooms::Open.count do
       create_new_user
+    end
+  end
+
+  test "memberships granted to the open rooms are like any other" do
+    freeze_time
+    user = create_new_user
+
+    assert_equal Rooms::Open.ids.sort, user.memberships.pluck(:room_id).sort
+    user.memberships.each do |membership|
+      assert membership.involved_in_mentions?
+      assert_equal Time.current, membership.created_at
+      assert_equal Time.current, membership.updated_at
     end
   end
 
@@ -27,6 +47,70 @@ class UserTest < ActiveSupport::TestCase
   test "deactivating a user deletes their sessions" do
     assert_changes -> { users(:david).sessions.count }, from: 1, to: 0 do
       users(:david).deactivate
+    end
+  end
+
+  test "changing the password signs out every session, the current one included" do
+    Current.session = users(:david).sessions.create!(user_agent: "This device", ip_address: "127.0.0.1")
+
+    assert_changes -> { users(:david).sessions.count }, to: 0 do
+      users(:david).update!(password: "a new secret123456")
+    end
+  end
+
+  test "changing the password closes the account's live connections" do
+    remote_connections = mock
+    remote_connections.expects(:disconnect).with(reconnect: true)
+    ActionCable.server.stubs(:remote_connections).returns(mock.tap { |m| m.expects(:where).with(current_user: users(:david)).returns(remote_connections) })
+
+    users(:david).update!(password: "a new secret123456")
+  end
+
+  test "changing the password closes live connections even when the user is saved again before commit" do
+    remote_connections = mock
+    remote_connections.expects(:disconnect).with(reconnect: true)
+    ActionCable.server.stubs(:remote_connections).returns(mock.tap { |m| m.expects(:where).with(current_user: users(:david)).returns(remote_connections) })
+
+    User.transaction do
+      users(:david).update!(password: "a new secret123456")
+      users(:david).update!(name: "Dave")
+    end
+  end
+
+  test "a password change that rolls back keeps every session and connection" do
+    ActionCable.server.expects(:remote_connections).never
+
+    assert_no_changes -> { users(:david).sessions.count } do
+      User.transaction do
+        users(:david).update!(password: "a new secret123456")
+        raise ActiveRecord::Rollback
+      end
+    end
+  end
+
+  test "changing the password removes every push subscription of the user" do
+    assert users(:david).push_subscriptions.any?
+
+    users(:david).update!(password: "a new secret123456")
+
+    assert_empty users(:david).push_subscriptions.reload
+    assert users(:jason).push_subscriptions.any?
+  end
+
+  test "a password change that rolls back keeps push subscriptions" do
+    assert_no_changes -> { users(:david).push_subscriptions.count } do
+      User.transaction do
+        users(:david).update!(password: "a new secret123456")
+        raise ActiveRecord::Rollback
+      end
+    end
+  end
+
+  test "changing other details keeps every session" do
+    ActionCable.server.expects(:remote_connections).never
+
+    assert_no_changes -> { [ users(:david).sessions.count, users(:david).push_subscriptions.count ] } do
+      users(:david).update!(name: "Dave", email_address: "dave@37signals.com")
     end
   end
 

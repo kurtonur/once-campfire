@@ -15,9 +15,11 @@ include SSHKit::DSL
 ARCH = "linux/amd64,linux/arm64"
 BUILDER_NAME = "campfire-builder"
 GIT_SHA = `git rev-parse HEAD`.strip
+MANUAL_NOTES = ARGV.delete("--notes")
 VERSION = ARGV[0]
 
-DOCKER_IMAGE_NAME = "registry.once.com/campfire"
+DOCKER_REGISTRY = "registry.once.com"
+DOCKER_IMAGE_NAME = "#{DOCKER_REGISTRY}/campfire"
 DOCKER_LATEST_IMAGE_NAME = [ DOCKER_IMAGE_NAME, :latest ].join(":")
 DOCKER_TAGGED_IMAGE_NAME = [ DOCKER_IMAGE_NAME, GIT_SHA ].join(":")
 
@@ -28,7 +30,7 @@ EXPORT_REMOTE_USER = "app"
 EXPORT_DEPLOY_HOSTS = %w[ once-store-app-101 once-store-app-102 ]
 EXPORT_DEPLOY_LOCATION = "/local/app/product_releases/"
 
-abort "You must specify a version, e.g. `bin/release 1.0.0`" unless VERSION
+abort "You must specify a version, e.g. `bin/release 1.0.0` (pass --notes to write release notes manually)" unless VERSION
 
 current_branch = `git rev-parse --abbrev-ref HEAD`.strip
 if current_branch != "main"
@@ -46,6 +48,18 @@ def announcing(message)
   yield
 end
 
+announcing "Checking #{DOCKER_REGISTRY} login..." do
+  unless system "docker", "manifest", "inspect", DOCKER_LATEST_IMAGE_NAME, out: File::NULL, err: File::NULL
+    abort <<~MESSAGE
+      Not logged in to #{DOCKER_REGISTRY}. Run:
+
+        docker login #{DOCKER_REGISTRY}
+
+      The credentials are in the "chatinabox" entry in 1Password.
+    MESSAGE
+  end
+end
+
 on(:local) do
   builder_found = test :docker, :buildx, :inspect, BUILDER_NAME
 
@@ -57,19 +71,25 @@ on(:local) do
 end
 
 announcing "Creating GitHub release v#{VERSION}..." do
-  notes_file = "tmp/release_notes.md"
-
   on(:local) do
-    execute :mkdir, "-p", "tmp"
+    if MANUAL_NOTES
+      notes_file = "tmp/release_notes.md"
 
-    File.write(notes_file, "# What's Changed\n\n- \n")
-    system ENV["EDITOR"] || "vim", notes_file
+      execute :mkdir, "-p", "tmp"
 
-    unless system "gh", "release", "create", "v#{VERSION}", "--title", "v#{VERSION}", "--notes-file", notes_file
-      abort "Failed to create release; check that the version doesn't already exist"
+      File.write(notes_file, "# What's Changed\n\n- \n")
+      system ENV["EDITOR"] || "vim", notes_file
+
+      unless system "gh", "release", "create", "v#{VERSION}", "--title", "v#{VERSION}", "--notes-file", notes_file
+        abort "Failed to create release; check that the version doesn't already exist"
+      end
+
+      execute :rm, notes_file
+    else
+      unless system "gh", "release", "create", "v#{VERSION}", "--title", "v#{VERSION}", "--generate-notes"
+        abort "Failed to create release; check that the version doesn't already exist"
+      end
     end
-
-    execute :rm, notes_file
   end
 end
 

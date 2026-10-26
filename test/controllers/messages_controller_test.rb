@@ -49,7 +49,11 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "creating a message broadcasts the message to the room" do
+    ContentFilters::TextMessagePresentationFilters.expects(:apply).once.with { |body| body.to_plain_text == "New one" }.returns(ActionText::Content.new("New one"))
     post room_messages_url(@room, format: :turbo_stream), params: { message: { body: "New one", client_message_id: 999 } }
+
+    assert_response :success
+    assert_select "turbo-stream[action=append] .message__body", text: /New one/
 
     assert_rendered_turbo_stream_broadcast @room, :messages, action: "append", target: [ @room, :messages ] do
       assert_select ".message__body", text: /New one/
@@ -57,9 +61,90 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "creating a message broadcasts unread room" do
-    assert_broadcasts "unread_rooms", 1 do
+  test "message copy links preserve the request origin in broadcasts and regular reads" do
+    [
+      [ "once.campfire.test:38683", false, "http://once.campfire.test:38683" ],
+      [ "once.campfire.test:8443", true, "https://once.campfire.test:8443" ],
+      [ "once.campfire.test:80", false, "http://once.campfire.test" ],
+      [ "once.campfire.test:443", true, "https://once.campfire.test" ]
+    ].each_with_index do |(host, secure, origin), index|
+      host! host
+      https! secure
+
+      post room_messages_path(@room, format: :turbo_stream), params: { message: {
+        body: "Request origin #{index}", client_message_id: "request-origin-#{index}" } }
+      assert_response :success
+      message = Message.last
+      expected_url = "#{origin}/rooms/#{@room.id}/@#{message.id}"
+
+      assert_rendered_turbo_stream_broadcast @room, :messages, action: "append", target: [ @room, :messages ] do
+        assert_copy_link_button expected_url
+      end
+
+      get room_message_path(@room, message)
+      assert_response :success
+      assert_copy_link_button expected_url
+    end
+  end
+
+  test "creating a message with an image that can't be decoded broadcasts the message to the room" do
+    webp = Vips::Image.new_from_file(file_fixture("moon.jpg").to_s).webpsave_buffer
+    broken = Rack::Test::UploadedFile.new(StringIO.new(webp.byteslice(0, webp.bytesize / 2)), "image/webp", original_filename: "broken.webp")
+
+    post room_messages_url(@room, format: :turbo_stream), params: { message: { attachment: broken, client_message_id: 999 } }
+
+    assert_response :success
+    assert_rendered_turbo_stream_broadcast @room, :messages, action: "append", target: [ @room, :messages ] do
+      assert_select ".message__body a[href*='broken.webp']"
+    end
+  end
+
+  test "creating a message broadcasts unread room to each member" do
+    memberships(:david_watercooler).present # the poster is in the room
+
+    @room.users.each do |member|
+      assert_broadcasts UnreadRoomsChannel.stream_name_for(member.id), 1 do
+        perform_enqueued_jobs only: Message::BroadcastUnreadRoomJob do
+          post room_messages_url(@room, format: :turbo_stream), params: { message: { body: "New one #{member.id}", client_message_id: member.id } }
+        end
+      end
+    end
+  end
+
+  test "creating a message leaves the unread fanout to a job" do
+    member = @room.users.excluding(users(:david)).first
+
+    assert_no_broadcasts UnreadRoomsChannel.stream_name_for(member.id) do
       post room_messages_url(@room, format: :turbo_stream), params: { message: { body: "New one", client_message_id: 999 } }
+    end
+
+    assert_enqueued_with job: Message::BroadcastUnreadRoomJob, args: [ Message.last ]
+  end
+
+  test "the unread fanout skips a member who has opened the room since" do
+    membership = memberships(:jason_watercooler)
+
+    post room_messages_url(@room, format: :turbo_stream), params: { message: { body: "New one", client_message_id: 999 } }
+    assert membership.reload.unread?
+
+    membership.present
+    membership.reload.disconnected
+
+    assert_no_broadcasts UnreadRoomsChannel.stream_name_for(membership.user_id) do
+      perform_enqueued_jobs only: Message::BroadcastUnreadRoomJob
+    end
+  end
+
+  test "creating a message doesn't broadcast unread room to non-members" do
+    outsiders = User.where.not(id: @room.users.map(&:id))
+    assert outsiders.any?, "need someone outside the room for this test to mean anything"
+
+    outsiders.each do |outsider|
+      assert_no_broadcasts UnreadRoomsChannel.stream_name_for(outsider.id) do
+        perform_enqueued_jobs only: Message::BroadcastUnreadRoomJob do
+          post room_messages_url(@room, format: :turbo_stream), params: { message: { body: "New one", client_message_id: 999 } }
+        end
+      end
     end
   end
 
@@ -133,6 +218,20 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
       post room_messages_url(@room, format: :turbo_stream), params: { message: {
         body: "<div>Hey #{mention_attachment_for(:bender)}</div>", client_message_id: 999 } }
     end
+  end
+
+  test "messages sharing a client_message_id render as distinct elements" do
+    victim = @messages.last
+
+    post room_messages_url(@room, format: :turbo_stream), params: { message: { body: "Collision", client_message_id: victim.client_message_id } }
+    colliding = @room.messages.ordered.last
+    assert_not_equal victim, colliding
+
+    get room_messages_url(@room)
+
+    ids = css_select(".message[data-message-id]").map { it["id"] }
+    assert_equal ids.uniq, ids
+    ensure_messages_present victim, colliding
   end
 
   private

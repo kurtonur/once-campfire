@@ -66,6 +66,18 @@ class Rooms::ClosedsControllerTest < ActionDispatch::IntegrationTest
     assert rooms(:designers).reload.name, "Designers"
   end
 
+  test "a direct room can't be converted to closed and have its participants revised" do
+    sign_in :kevin
+    direct = rooms(:bender_and_kevin)
+
+    put rooms_closed_url(direct), params: {
+      room: { name: "Watercooler" }, user_ids: [ users(:kevin).id, users(:jz).id ]
+    }
+
+    assert_equal "Rooms::Direct", Room.find(direct.id).type
+    assert_equal [ users(:bender).id, users(:kevin).id ].sort, Room.find(direct.id).user_ids.sort
+  end
+
   test "remove yourself" do
     assert_difference -> { users(:david).rooms.count }, -1 do
       put rooms_closed_url(rooms(:designers), params: { room: { name: "Designers" }, user_ids: [ users(:jason).id, users(:jz).id ] })

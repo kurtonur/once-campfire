@@ -36,6 +36,19 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
     assert parsed_cookies.signed[:session_token]
   end
 
+  test "create is refused when the password changes after it was checked" do
+    user = User.find(users(:david).id)
+    User.find(user.id).update!(password: "a new secret123456")
+    User.stubs(:authenticate_by).returns(user)
+
+    assert_no_difference -> { Session.count } do
+      post session_url, params: { email_address: "david@37signals.com", password: "secret123456" }
+    end
+
+    assert_response :unauthorized
+    assert_nil parsed_cookies.signed[:session_token]
+  end
+
   test "create with invalid credentials" do
     post session_url, params: { email_address: "david@37signals.com", password: "wrong" }
 
@@ -50,6 +63,30 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
     assert_difference -> { Session.count }, -1 do
       delete session_url
     end
+
+    assert_redirected_to root_url
+    assert_not cookies[:session_token].present?
+    assert_nil Session.find_by(id: session.id)
+  end
+
+  test "destroy closes the signed-out user's live connections" do
+    sign_in :david
+
+    remote_connections = mock
+    remote_connections.expects(:disconnect).with(reconnect: true)
+    ActionCable.server.stubs(:remote_connections).returns(mock.tap { |m| m.expects(:where).with(current_user: users(:david)).returns(remote_connections) })
+
+    delete session_url
+
+    assert_redirected_to root_url
+  end
+
+  test "destroy still signs out when the realtime service is unreachable" do
+    sign_in :david
+    session = users(:david).sessions.last
+    ActionCable.server.stubs(:remote_connections).raises(RuntimeError.new("cable down"))
+
+    delete session_url
 
     assert_redirected_to root_url
     assert_not cookies[:session_token].present?

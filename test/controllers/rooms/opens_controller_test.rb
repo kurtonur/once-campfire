@@ -57,4 +57,23 @@ class Rooms::OpensControllerTest < ActionDispatch::IntegrationTest
     put rooms_open_url(rooms(:designers)), params: { room: { name: "Doesn't matter" } }
     assert_equal rooms(:designers).memberships.count, User.count
   end
+
+  test "a direct room can't be promoted to open by its creator" do
+    sign_in :kevin
+    direct = rooms(:bender_and_kevin)
+
+    put rooms_open_url(direct), params: { room: { name: "Watercooler" } }
+
+    assert_equal "Rooms::Direct", Room.find(direct.id).type
+    assert_equal [ users(:bender).id, users(:kevin).id ].sort, Room.find(direct.id).user_ids.sort
+  end
+
+  test "a direct room can't be promoted to open by an administrator either" do
+    direct = rooms(:david_and_kevin)
+
+    put rooms_open_url(direct), params: { room: { name: "Watercooler" } }
+
+    assert_equal "Rooms::Direct", Room.find(direct.id).type
+    assert_equal [ users(:david).id, users(:kevin).id ].sort, Room.find(direct.id).user_ids.sort
+  end
 end

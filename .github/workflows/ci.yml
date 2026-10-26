@@ -6,16 +6,22 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions: {}
+
 jobs:
   scan:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@26e5b7d197ebf60545ee9667bcbace0be11ccaec # v1.334.0
         with:
           ruby-version: .ruby-version
           bundler-cache: true
@@ -25,12 +31,16 @@ jobs:
 
   lint:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@26e5b7d197ebf60545ee9667bcbace0be11ccaec # v1.334.0
         with:
           ruby-version: .ruby-version
           bundler-cache: true
@@ -38,23 +48,69 @@ jobs:
       - name: Lint code for consistent style
         run: bin/rubocop
 
+  herb:
+    name: Herb check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Install packages
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libvips
+
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@26e5b7d197ebf60545ee9667bcbace0be11ccaec # v1.334.0
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Check that every HTML template compiles through Herb
+        run: bin/rails herb:check
+
+  lint-actions:
+    name: GitHub Actions audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run actionlint
+        uses: rhysd/actionlint@914e7df21a07ef503a81201c76d2b11c789d3fca # v1.7.12
+
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
+        with:
+          advanced-security: false
+
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     services:
       redis:
-        image: redis
+        image: redis # zizmor: ignore[unpinned-images] -- version tag is fine for service containers
         ports:
           - 6379:6379
         options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - name: Install packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libsqlite3-0 libvips curl ffmpeg
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libsqlite3-0 sqlite3 libvips curl ffmpeg
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@26e5b7d197ebf60545ee9667bcbace0be11ccaec # v1.334.0
         env:
           REDIS_URL: redis://localhost:6379/0
         with:
@@ -64,23 +120,30 @@ jobs:
       - name: Run tests
         run: bin/rails db:setup test
 
+      - name: Test benchmark response validation
+        run: bundle exec ruby bench/test_http_client.rb
+
   test_system:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     services:
       redis:
-        image: redis
+        image: redis # zizmor: ignore[unpinned-images] -- version tag is fine for service containers
         ports:
           - 6379:6379
         options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - name: Install packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libsqlite3-0 libvips curl ffmpeg
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libsqlite3-0 sqlite3 libvips curl ffmpeg
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@26e5b7d197ebf60545ee9667bcbace0be11ccaec # v1.334.0
         env:
           REDIS_URL: redis://localhost:6379/0
         with:

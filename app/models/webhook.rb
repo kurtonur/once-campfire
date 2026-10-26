@@ -24,6 +24,8 @@ class Webhook < ApplicationRecord
         Net::HTTP::Post.new(uri, "Content-Type" => "application/json").tap { |request| request.body = payload }
     end
 
+    # No PrivateNetworkGuard, unlike Opengraph::Fetch: only an administrator sets this URL,
+    # and operators legitimately point bots at their own internal services.
     def http
       Net::HTTP.new(uri.host, uri.port).tap do |http|
         http.use_ssl = (uri.scheme == "https")
@@ -61,7 +63,7 @@ class Webhook < ApplicationRecord
     end
 
     def extract_attachment_from(response)
-      if response.content_type && mime_type = Mime::Type.lookup(response.content_type)
+      if response.code == "200" && response.content_type && mime_type = Mime::Type.lookup(response.content_type)
         ActiveStorage::Blob.create_and_upload! \
           io: StringIO.new(response.body), filename: "attachment.#{mime_type.symbol}", content_type: mime_type.to_s
       end

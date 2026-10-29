@@ -30,6 +30,7 @@ module Rooms
         payload, header = JWT.decode(token, ENV.fetch("CAMPFIRE_JITSI_APP_SECRET"), true, algorithm: "HS256",
           verify_iss: true, iss: "campfire", verify_aud: true, aud: "campfire")
         assert_equal "HS256", header["alg"]
+        assert_equal "JWT", header["typ"]
         assert_equal url.path.delete_prefix("/"), payload["room"]
         assert_equal "meet.jitsi", payload["sub"]
         assert_equal users(:david).id.to_s, payload.dig("context", "user", "id")

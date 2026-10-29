@@ -55,7 +55,7 @@ module Campfire
         sub: ENV.fetch("CAMPFIRE_JITSI_XMPP_DOMAIN", "meet.jitsi"),
         room: jitsi_room_name(room), iat: now, nbf: now - 30, exp: now + 1.hour.to_i,
         context: { user: { id: user.id.to_s, name: user.name } }
-      }, ENV.fetch("CAMPFIRE_JITSI_APP_SECRET"), "HS256")
+      }, ENV.fetch("CAMPFIRE_JITSI_APP_SECRET"), "HS256", typ: "JWT")
     end
   end
 end

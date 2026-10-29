@@ -5,15 +5,12 @@ module Rooms
     before_action :set_room
 
     def show
-      base = Campfire::Rtc.jitsi_base_url
-      return head :not_found if base.blank?
-      return head :not_found if @room.direct?
+      response.headers["Cache-Control"] = "no-store, private"
+      return head :not_found unless Campfire::Rtc.jitsi_enabled?
 
-      secret = Rails.application.key_generator.generate_key("campfire/jitsi-room-name")
-      digest = OpenSSL::HMAC.hexdigest("SHA256", secret, @room.id.to_s)
-      path_segment = "Campfire#{digest}"
-      fragment = jitsi_url_fragment
-      embed_url = "#{base.chomp("/")}/#{path_segment}#{fragment}"
+      token = Campfire::Rtc.jitsi_token(room: @room, user: Current.user)
+      query = { jwt: token }.to_query
+      embed_url = "#{Campfire::Rtc.jitsi_base_url}/#{Campfire::Rtc.jitsi_room_name(@room)}?#{query}#{jitsi_url_fragment}"
       render json: { embed_url: embed_url }
     end
 
@@ -24,13 +21,9 @@ module Rooms
       end
 
       def jitsi_url_fragment
-        base = "#config.prejoinPageEnabled=false"
-        case params[:media].to_s
-        when "audio"
-          "#{base}&config.startWithAudioMuted=false&config.startVideoMuted=true"
-        else
-          "#{base}&config.startWithAudioMuted=false&config.startVideoMuted=false"
-        end
+        audio_only = params[:media] == "audio"
+        "#config.prejoinConfig.enabled=false&config.startWithAudioMuted=false" \
+          "&config.startWithVideoMuted=#{audio_only}&config.startAudioOnly=#{audio_only}"
       end
   end
 end

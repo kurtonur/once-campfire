@@ -1,5 +1,37 @@
 <span class="call-bar">
-<% if room.direct? %>
+<% if Campfire::Rtc.jitsi_enabled? %>
+  <div
+    class="call-bar__jitsi"
+    data-controller="jitsi-call"
+    data-jitsi-call-url-value="<%= room_jitsi_call_path(room) %>"
+    data-jitsi-call-room-id-value="<%= room.id %>"
+    data-jitsi-call-error-text-value="<%= t("calls.connection_error") %>"
+    data-action="turbo:before-cache@document->jitsi-call#close"
+  >
+    <button type="button" class="btn btn--small" data-action="jitsi-call#open" data-jitsi-call-media-param="audio" title="<%= t("calls.voice_room_title") %>">
+      <%= image_tag "mobile-phone.svg", size: 20, aria: { hidden: true } %>
+      <span class="call-bar__label"><%= t("calls.voice_short") %></span>
+    </button>
+    <button type="button" class="btn btn--small" data-action="jitsi-call#open" data-jitsi-call-media-param="video" title="<%= t("calls.video_room_title") %>">
+      <%= image_tag "camera.svg", size: 20, aria: { hidden: true } %>
+      <span class="call-bar__label"><%= t("calls.video_short") %></span>
+    </button>
+
+    <p role="alert" data-jitsi-call-target="error" hidden></p>
+    <div class="call-webrtc-panel" data-jitsi-call-target="incoming" hidden>
+      <p><%= t("calls.incoming") %></p>
+      <button type="button" class="btn" data-action="jitsi-call#accept"><%= t("calls.accept") %></button>
+      <button type="button" class="btn btn--negative" data-action="jitsi-call#decline"><%= t("calls.decline") %></button>
+    </div>
+    <dialog class="call-jitsi-dialog" data-jitsi-call-target="dialog" data-action="cancel->jitsi-call#close close->jitsi-call#close">
+      <div class="call-jitsi-dialog__header">
+        <button type="button" class="btn btn--small" data-action="jitsi-call#close"><%= t("calls.close") %></button>
+      </div>
+      <iframe class="call-jitsi-dialog__frame" title="<%= t("calls.group_call") %>" referrerpolicy="no-referrer" data-jitsi-call-target="frame" allow="camera; microphone; fullscreen; display-capture; autoplay"></iframe>
+    </dialog>
+  </div>
+
+<% elsif room.direct? %>
   <div
     class="call-bar__webrtc"
     data-controller="webrtc-call"
@@ -40,29 +72,6 @@
         </div>
       </div>
     </div>
-  </div>
-
-<% elsif Campfire::Rtc.jitsi_base_url.present? %>
-  <div
-    class="call-bar__jitsi"
-    data-controller="jitsi-call"
-    data-jitsi-call-url-value="<%= room_jitsi_call_path(room) %>"
-  >
-    <button type="button" class="btn btn--small" data-action="jitsi-call#open" data-jitsi-call-media-param="audio" title="<%= t("calls.voice_room_title") %>">
-      <%= image_tag "mobile-phone.svg", size: 20, aria: { hidden: true } %>
-      <span class="call-bar__label"><%= t("calls.voice_short") %></span>
-    </button>
-    <button type="button" class="btn btn--small" data-action="jitsi-call#open" data-jitsi-call-media-param="video" title="<%= t("calls.video_room_title") %>">
-      <%= image_tag "camera.svg", size: 20, aria: { hidden: true } %>
-      <span class="call-bar__label"><%= t("calls.video_short") %></span>
-    </button>
-
-    <dialog class="call-jitsi-dialog" data-jitsi-call-target="dialog">
-      <div class="call-jitsi-dialog__header">
-        <button type="button" class="btn btn--small" data-action="jitsi-call#close"><%= t("calls.close") %></button>
-      </div>
-      <iframe class="call-jitsi-dialog__frame" data-jitsi-call-target="frame" allow="camera; microphone; fullscreen; display-capture; autoplay"></iframe>
-    </dialog>
   </div>
 
 <% else %>

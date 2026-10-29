@@ -59,40 +59,7 @@ shared rate limits retain their existing store.
 
 The checked-in `docker-compose.yaml` builds this fork with its Dockerfile.
 Keep the persistent `campfire-storage` volume mounted at `/rails/storage`.
-This includes the fork’s voice/video and structured-message formatting changes.
-
-### Voice / video (self-hosted)
-
-When Jitsi is configured, **Voice** and **Video** in both Ping (direct) chats and
-group rooms open your own Jitsi server. People viewing the same room receive an
-invitation with Accept and Decline; audio calls start with the camera disabled.
-Closing the dialog, pressing Escape, or navigating away releases the call frame.
-Invitations only reach people who currently have that room open.
-
-Set these runtime variables in Coolify (the Compose file passes them to Rails):
-
-- `CAMPFIRE_JITSI_BASE_URL`: HTTPS origin, e.g. `https://jitsi.example.com`.
-- `CAMPFIRE_JITSI_APP_ID`: `campfire` by default; matches Jitsi `JWT_APP_ID`,
-  `JWT_ACCEPTED_ISSUERS` and `JWT_ACCEPTED_AUDIENCES`.
-- `CAMPFIRE_JITSI_APP_SECRET`: a random shared secret matching Jitsi `JWT_APP_SECRET`.
-- `CAMPFIRE_JITSI_XMPP_DOMAIN`: `meet.jitsi` by default; matches Jitsi `XMPP_DOMAIN`.
-
-Configure Jitsi with `ENABLE_AUTH=1`, `AUTH_TYPE=jwt`, `ENABLE_GUESTS=0`,
-`JWT_ALLOW_EMPTY=0`, `JWT_ENABLE_DOMAIN_VERIFICATION=1`, and `JWT_SIGN_TYPE=HS256`.
-The Rails endpoint checks room membership and issues a one-hour token scoped to
-that room and user. Tokens are never cached; room names are derived with HMAC.
-A reconnect after token expiry requires reopening the call. JWT secrets stay on
-the server and must never be checked into Git.
-
-The minimum Jitsi stack is web, Prosody, Jicofo and Jitsi Videobridge. Its HTTPS
-origin and UDP port 10000 must be reachable. TURN is an optional addition for
-networks that block direct UDP media. Recording and SIP services are unnecessary
-for browser voice/video calls.
-
-Without Jitsi configuration, Ping chats retain the browser WebRTC fallback.
-`CAMPFIRE_ICE_SERVERS_JSON` overrides its ICE servers; otherwise
-`CAMPFIRE_STUN_URL` and optional `CAMPFIRE_TURN_URL`, `CAMPFIRE_TURN_USERNAME`,
-`CAMPFIRE_TURN_CREDENTIAL` configure STUN/TURN.
+This fork supports text conversations in rooms and direct messages, with structured-message formatting.
 
 ## Other implementations
 

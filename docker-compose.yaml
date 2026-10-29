@@ -15,10 +15,6 @@ services:
       - "SSL_DOMAIN=${SSL_DOMAIN:-false}"
       - "SKIP_TELEMETRY=${SKIP_TELEMETRY:-true}"
       - "SENTRY_DSN=${SENTRY_DSN}"
-      - "CAMPFIRE_JITSI_BASE_URL=${CAMPFIRE_JITSI_BASE_URL:-}"
-      - "CAMPFIRE_JITSI_APP_ID=${CAMPFIRE_JITSI_APP_ID:-campfire}"
-      - "CAMPFIRE_JITSI_APP_SECRET=${CAMPFIRE_JITSI_APP_SECRET:-}"
-      - "CAMPFIRE_JITSI_XMPP_DOMAIN=${CAMPFIRE_JITSI_XMPP_DOMAIN:-meet.jitsi}"
     ports:
       - "8989:80"
     healthcheck:

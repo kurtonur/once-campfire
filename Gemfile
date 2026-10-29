@@ -43,7 +43,6 @@ gem "rqrcode"
 gem "rails_autolink"
 gem "geared_pagination"
 gem "jbuilder"
-gem "jwt", "~> 3.2"
 gem "surfguard", github: "basecamp/surfguard" # The SSRF address policy behind RestrictedHTTP
 gem "kredis"
 gem "platform_agent"

@@ -11,6 +11,11 @@
   row-gap: var(--block-space);
   z-index: 2;
 
+  .room--current {
+    flex: 0 1 auto;
+    min-inline-size: 0;
+  }
+
   &:has(.room--current) {
     padding-inline: var(--inline-space);
 

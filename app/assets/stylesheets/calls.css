@@ -3,9 +3,9 @@
   font-size: 0.9rem;
 }
 
-/* Keep call controls on-screen: room title must shrink in the flex row (#nav). */
+/* Fit the title to its text while allowing long names to make room for controls. */
 #nav .room--current {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-inline-size: 0;
 }
 
@@ -40,10 +40,28 @@
   }
 }
 
-.call-bar__webrtc {
+.call-bar__jitsi,
+.call-bar__webrtc,
+.call-bar__hint {
+  align-items: center;
   display: flex;
-  flex-wrap: wrap;
   gap: inherit;
+}
+
+.call-bar__button {
+  block-size: var(--btn-size);
+  flex-shrink: 0;
+  font-size: inherit;
+  min-inline-size: var(--btn-size);
+  padding-block: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 45ch) {
+  .call-bar__button {
+    inline-size: var(--btn-size);
+    padding-inline: 0;
+  }
 }
 
 .call-webrtc-panel {

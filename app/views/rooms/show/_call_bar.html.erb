@@ -8,11 +8,11 @@
     data-jitsi-call-error-text-value="<%= t("calls.connection_error") %>"
     data-action="turbo:before-cache@document->jitsi-call#close"
   >
-    <button type="button" class="btn btn--small" data-action="jitsi-call#open" data-jitsi-call-media-param="audio" title="<%= t("calls.voice_room_title") %>">
+    <button type="button" class="btn call-bar__button" data-action="jitsi-call#open" data-jitsi-call-media-param="audio" title="<%= t("calls.voice_room_title") %>">
       <%= image_tag "mobile-phone.svg", size: 20, aria: { hidden: true } %>
       <span class="call-bar__label"><%= t("calls.voice_short") %></span>
     </button>
-    <button type="button" class="btn btn--small" data-action="jitsi-call#open" data-jitsi-call-media-param="video" title="<%= t("calls.video_room_title") %>">
+    <button type="button" class="btn call-bar__button" data-action="jitsi-call#open" data-jitsi-call-media-param="video" title="<%= t("calls.video_room_title") %>">
       <%= image_tag "camera.svg", size: 20, aria: { hidden: true } %>
       <span class="call-bar__label"><%= t("calls.video_short") %></span>
     </button>
@@ -44,11 +44,11 @@
     data-webrtc-call-media-error-text-value="<%= t("calls.media_error") %>"
     data-webrtc-call-lost-text-value="<%= t("calls.lost") %>"
   >
-    <button type="button" class="btn btn--small" data-action="webrtc-call#startAudio" title="<%= t("calls.voice_title") %>">
+    <button type="button" class="btn call-bar__button" data-action="webrtc-call#startAudio" title="<%= t("calls.voice_title") %>">
       <%= image_tag "mobile-phone.svg", size: 20, aria: { hidden: true } %>
       <span class="call-bar__label"><%= t("calls.voice_short") %></span>
     </button>
-    <button type="button" class="btn btn--small" data-action="webrtc-call#startVideo" title="<%= t("calls.video_title") %>">
+    <button type="button" class="btn call-bar__button" data-action="webrtc-call#startVideo" title="<%= t("calls.video_title") %>">
       <%= image_tag "camera.svg", size: 20, aria: { hidden: true } %>
       <span class="call-bar__label"><%= t("calls.video_short") %></span>
     </button>
@@ -76,11 +76,11 @@
 
 <% else %>
   <div class="call-bar__hint" data-controller="call-hint">
-    <button type="button" class="btn btn--small" data-action="call-hint#show" title="<%= t("calls.voice_title") %>">
+    <button type="button" class="btn call-bar__button" data-action="call-hint#show" title="<%= t("calls.voice_title") %>">
       <%= image_tag "mobile-phone.svg", size: 20, aria: { hidden: true } %>
       <span class="call-bar__label"><%= t("calls.voice_short") %></span>
     </button>
-    <button type="button" class="btn btn--small" data-action="call-hint#show" title="<%= t("calls.video_title") %>">
+    <button type="button" class="btn call-bar__button" data-action="call-hint#show" title="<%= t("calls.video_title") %>">
       <%= image_tag "camera.svg", size: 20, aria: { hidden: true } %>
       <span class="call-bar__label"><%= t("calls.video_short") %></span>
     </button>

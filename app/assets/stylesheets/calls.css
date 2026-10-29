@@ -26,7 +26,7 @@
   font-weight: 600;
 }
 
-@media (max-width: 45ch) {
+@media (max-width: 60ch) {
   .call-bar__label {
     position: absolute;
     width: 1px;
@@ -57,7 +57,7 @@
   white-space: nowrap;
 }
 
-@media (max-width: 45ch) {
+@media (max-width: 60ch) {
   .call-bar__button {
     inline-size: var(--btn-size);
     padding-inline: 0;
